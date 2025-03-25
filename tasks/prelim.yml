@@ -46,7 +46,7 @@
         changed_when: false
         register: prelim_uid_max_id
 
-      - name: "PRELIM | set_facts for interactive uid/gid"
+      - name: "PRELIM | Set facts for interactive uid/gid"
         ansible.builtin.set_fact:
             min_int_uid: "{{ prelim_uid_min_id.stdout }}"
             max_int_uid: "{{ prelim_uid_max_id.stdout }}"
@@ -60,14 +60,14 @@
             path: /sys/firmware/efi
         register: prelim_efi_boot
 
-      - name: "PRELIM | AUDIT | set legacy boot and grub path fact | Bios"
+      - name: "PRELIM | AUDIT | Set legacy boot and grub path fact | Bios"
         when: not prelim_efi_boot.stat.exists
         ansible.builtin.set_fact:
             rhel8cis_legacy_boot: true
             grub2_path: /etc/grub2.cfg
             rhel8cis_boot_path: /boot/grub2/
 
-      - name: "PRELIM | AUDIT | set grub fact | UEFI"
+      - name: "PRELIM | AUDIT | Set grub fact | UEFI"
         when: prelim_efi_boot.stat.exists
         ansible.builtin.set_fact:
             grub2_path: /etc/grub2-efi.cfg
