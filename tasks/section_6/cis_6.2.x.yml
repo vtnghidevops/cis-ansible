@@ -379,6 +379,8 @@
             path: "{{ prelim_interactive_users_home.stdout_lines | list }}"
             file_type: file
             hidden: true
+            use_regex: true
+            patterns: '.*\\.'
         register: discovered_hidden_files
 
       - name: "6.2.11 | AUDIT | Ensure local interactive user dot files access is configured | Warning on files found"
