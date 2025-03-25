@@ -366,8 +366,6 @@
       - NIST800-53R5_IA-5
       - rule_6.2.11
       - user
-  vars:
-      warn_control_id: '6.2.11'
   block:
       - name: "6.2.11 | AUDIT | Ensure local interactive user dot files access is configured | Check for files"
         # ansible.builtin.shell: find /home/ -name "\.*" exec ls -l {}
@@ -376,11 +374,12 @@
         # check_mode: false
         # register: discovered_hidden_files
         ansible.builtin.find:
-            path: "{{ prelim_interactive_users_home.stdout_lines | list }}"
+            paths: "{{ prelim_interactive_users_home.stdout_lines | list }}"
             file_type: file
             hidden: true
-            use_regex: true
-            patterns: '.*\\.'
+            use_regex: false
+            patterns: '.*'
+            recurse: true
         register: discovered_hidden_files
 
       - name: "6.2.11 | AUDIT | Ensure local interactive user dot files access is configured | Warning on files found"
@@ -395,6 +394,8 @@
         when:
             - not rhel8cis_dotperm_ansiblemanaged
             - discovered_hidden_files.matched > 0
+        vars:
+            warn_control_id: '6.2.11'
         ansible.builtin.import_tasks:
             file: warning_facts.yml
 
@@ -435,5 +436,20 @@
               when:
                   - item.path is search (".forward") or item.path is search (".rhost")
                   - item.path is not search ("CIS")
-              ansible.builtin.shell: "mv {{ item.path }} {{ item.path }}_CIS_TOBEREVIEWED"
+              ansible.builtin.command: "mv {{ item.path }} {{ item.path }}_CIS_TOBEREVIEWED"
+              changed_when: true
+              register: discovered_hidden_file_name_change
               with_items: "{{ discovered_hidden_files.files }}"
+
+            - name: "6.2.11 | AUDIT | Ensure local interactive user dot files access is configured | Warning on files found"
+              when: "discovered_hidden_file_name_change.results is search 'mv /'"
+              ansible.builtin.debug:
+                  msg:
+                      - "Warning!! Please investigate that .forward or .rhost files have been found and renamed to (name)_CIS_TOBEREVIEWED"
+
+            - name: "6.2.11 | PATCH | Ensure local interactive user dot files access is configured | Set warning count"
+              when: "discovered_hidden_file_name_change.results is search 'mv /'"
+              vars:
+                  warn_control_id: '6.2.11_forward_rhosts_name_changed'
+              ansible.builtin.import_tasks:
+                  file: warning_facts.yml
