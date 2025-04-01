@@ -19,7 +19,6 @@ rhel8cis_section6: true
 
 rhel8cis_level_1: true
 rhel8cis_level_2: true
-
 rhel8cis_selinux_disable: false
 
 # Some tests can have a heavy impact on systen e.g. find on all filesystems etc
@@ -28,6 +27,10 @@ rhel8cis_disruption_high: false
 ## Python Binary
 ## This is used for python3 Installations where python2 OS modules are used in ansible
 python2_bin: /bin/python2.7
+
+# Create managed not custom local_facts files
+create_benchmark_facts: true
+ansible_facts_path: /etc/ansible/facts.d
 
 ## Benchmark name used by audting control role
 # The audit variable found at the base
