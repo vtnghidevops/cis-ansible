@@ -152,7 +152,8 @@
 
 - name: Capture /etc/password variables
   when:
-      - rhel8cis_section5 or
+      - rhel8cis_section4 or
+        rhel8cis_section5 or
         rhel8cis_section6
   tags:
       - always
