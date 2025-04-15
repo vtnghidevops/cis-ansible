@@ -1,4 +1,5 @@
 ---
+
 # defaults file for rhel8-cis
 
 system_is_container: false
@@ -32,7 +33,7 @@ python2_bin: /bin/python2.7
 create_benchmark_facts: true
 ansible_facts_path: /etc/ansible/facts.d
 
-## Benchmark name used by audting control role
+## Benchmark name used by auditing control role
 # The audit variable found at the base
 benchmark: RHEL8-CIS
 benchmark_version: v3.0.0
