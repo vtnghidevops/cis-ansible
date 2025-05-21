@@ -98,5 +98,5 @@
       validate: aide -D --config %s
   register: aide_file_integrity_check
   failed_when:
-    - not ansible_check_mode
-    - aide_file_integrity_check.failed
+      - not ansible_check_mode
+      - aide_file_integrity_check.failed
