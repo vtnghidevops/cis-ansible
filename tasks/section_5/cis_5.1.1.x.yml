@@ -34,11 +34,6 @@
       enabled: true
 
 - name: "5.1.1.3 | PATCH | Ensure journald is configured to send logs to rsyslog"
-  ansible.builtin.lineinfile:
-      path: /etc/systemd/journald.conf
-      regexp: "^#ForwardToSyslog=|^ForwardToSyslog="
-      line: ForwardToSyslog=yes
-  notify: Restart_journald
   when:
       - rhel8cis_rule_5_1_1_3
       - rhel8cis_syslog == "rsyslog"
@@ -54,6 +49,11 @@
       - NIST800-53R5_SI-5
       - rsyslog
       - rule_5.1.1.3
+  ansible.builtin.lineinfile:
+      path: /etc/systemd/journald.conf
+      regexp: "^#ForwardToSyslog=|^ForwardToSyslog="
+      line: ForwardToSyslog=yes
+  notify: Restart_journald
 
 - name: "5.1.1.4 | PATCH | Ensure rsyslog default file permissions configured"
   when:
@@ -65,11 +65,11 @@
       - patch
       - rsyslog
       - rule_5.1.1.4
-  notify: Restart_rsyslog
   ansible.builtin.lineinfile:
       path: /etc/rsyslog.conf
       regexp: '^\$FileCreateMode'
       line: '$FileCreateMode 0640'
+  notify: Restart_rsyslog
 
 - name: "5.1.1.5 | PATCH | Ensure logging is configured"
   when:
@@ -84,7 +84,7 @@
   notify: Restart_rsyslog
   block:
       - name: "5.1.1.5 | AUDIT | Ensure logging is configured | rsyslog current config message out"
-        ansible.builtin.shell: cat /etc/rsyslog.conf
+        ansible.builtin.command: cat /etc/rsyslog.conf
         changed_when: false
         failed_when: false
         check_mode: false
@@ -123,6 +123,7 @@
             insertafter: '#### RULES ####'
 
       - name: "5.1.1.5 | PATCH | Ensure logging is configured | Local log settings"
+        when: rhel8cis_rsyslog_ansiblemanaged
         ansible.builtin.blockinfile:
             path: /etc/rsyslog.conf
             state: present
@@ -170,7 +171,6 @@
   notify: Restart_rsyslog
   ansible.builtin.blockinfile:
       path: /etc/rsyslog.conf
-      state: present
       block: |
         # target can be IP or FQDN
         *.* action(type="omfwd" target="{{ rhel8cis_remote_log_host }}" port="{{ rhel8cis_remote_log_port }}" protocol="{{ rhel8cis_remote_log_protocol }}" action.resumeRetryCount="{{ rhel8cis_remote_log_retrycount }}" queue.type="LinkedList" queue.size="{{ rhel8cis_remote_log_queuesize }}")
