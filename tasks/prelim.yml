@@ -174,9 +174,7 @@
     state: present
 
 - name: "PRELIM | AUDIT | Find all sudoers files."
-  when:
-    - rhel8cis_rule_4_3_4 or
-      rhel8cis_rule_4_3_5
+  when: rhel8cis_rule_4_3_4 or rhel8cis_rule_4_3_5
   tags: always
   ansible.builtin.command: "find /etc/sudoers /etc/sudoers.d/ -type f ! -name '*~' ! -name '*.*'"
   changed_when: false
@@ -207,10 +205,20 @@
     - rhel8cis_rule_5_2_4_2
     - rhel8cis_rule_5_2_4_3
     - rhel8cis_rule_5_2_4_4
-  tags: always
+  tags:
+    - always
+    - level2-server
+    - level2-workstation
+    - patch
+    - auditd
+    - rule_5.2.4.1
+    - rule_5.2.4.2
+    - rule_5.2.4.3
+    - rule_5.2.4.4
   ansible.builtin.shell: "grep ^log_file /etc/audit/auditd.conf | awk '{ print $NF }'"
   changed_when: false
   failed_when: prelim_audit_logfile.rc not in [0, 1]
+  check_mode: false
   register: prelim_audit_logfile
 
 - name: "PRELIM | AUDIT | 5.2.4.5/6/7 | Audit conf and rules files | list files"
