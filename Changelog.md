@@ -4,6 +4,9 @@
 
 ### 2.2 Updates
 
+June 2025 QA Fixes
+- Addresses #440 - tasks/prelim and defaults/main var standardization
+
 May 2025 QA Fixes
 Thank you @tgoetheyn
 - 1.2.5 => fix typo in tag
