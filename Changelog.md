@@ -4,6 +4,10 @@
 
 ### 2.2 Updates
 
+Update to audit_only to allow fetching results
+resolved false warning for fetch audit
+
+
 June 2025 QA Fixes
 - Addresses #440 - tasks/prelim and defaults/main var standardization
 
