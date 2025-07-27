@@ -1,0 +1,371 @@
+---
+# playbook_improved.yml - Cải thiện cho CIS Oracle Linux 8 Level 1 Server
+- name: Apply CIS Oracle Linux 8 Benchmark Level 1 Server
+  hosts: fpt-servers # Tên nhóm host trong inventory của bạn
+  become: true # Cần quyền root để thực hiện các thay đổi bảo mật
+  roles:
+    - ansible-lockdown.rhel8_cis
+  
+  # Chỉ chạy Level 1 Server controls bằng tags
+  tags: 
+    - level1-server
+    - automated
+    - patch
+  
+  vars:
+    # =========================
+    # CƠ BẢN SYSTEM CONTROL
+    # =========================
+    os_check: true                          # Kiểm tra OS compatibility
+    system_is_container: false              # Không phải container
+    system_is_ec2: false                    # Không phải AWS EC2
+    rhel8cis_disruption_high: false         # Không chạy các test có impact cao
+    
+    # =========================
+    # CIS SECTIONS - ENABLE ALL  
+    # =========================
+    rhel8cis_section1: true                 # Initial Setup
+    rhel8cis_section2: true                 # Services  
+    rhel8cis_section3: true                 # Network Configuration
+    rhel8cis_section4: true                 # Logging and Auditing
+    rhel8cis_section5: true                 # Access, Authentication
+    rhel8cis_section6: true                 # System Maintenance
+    
+    # =========================
+    # LEVEL CONTROL
+    # =========================
+    rhel8cis_level_1: true                  # Enable Level 1 controls
+    rhel8cis_level_2: false                 # Disable Level 2 controls cho server production
+    
+    # =========================
+    # SYSTEM UPDATES & PACKAGES
+    # =========================
+    rhel8cis_rule_1_2_1: true              # Ensure package repositories are configured
+    rhel8cis_rule_1_2_2: true              # Ensure gpgcheck is globally activated  
+    rhel8cis_rule_1_2_3: true              # Ensure repo_gpgcheck is globally activated
+    rhel8cis_rule_1_2_4: true              # Ensure package manager repositories are configured
+    rhel8cis_rule_1_2_5: true              # Ensure updates, patches, and additional security software are installed
+    
+    # =========================
+    # BOOTLOADER SECURITY
+    # =========================
+    rhel8cis_set_boot_pass: true           # Bật password cho bootloader
+    # LƯU Ý: Tạo hash password bằng: grub2-mkpasswd-pbkdf2
+    rhel8cis_bootloader_password_hash: 'grub.pbkdf2.sha512.THAY_DOI_HASH_NAY'  # pragma: allowlist secret
+    rhel8cis_rule_1_3_1: true              # Ensure bootloader password is set
+    rhel8cis_rule_1_3_2: true              # Ensure permissions on bootloader config are configured
+    
+    # =========================
+    # SELINUX HARDENING  
+    # =========================
+    rhel8cis_selinux_disable: false        # KHÔNG tắt SELinux
+    rhel8cis_selinux_state: enforcing      # Chế độ enforcing
+    rhel8cis_selinux_policy: targeted      # Policy targeted
+    rhel8cis_rule_1_5_1_1: true           # Ensure SELinux is installed
+    rhel8cis_rule_1_5_1_2: true           # Ensure SELinux is not disabled in bootloader  
+    rhel8cis_rule_1_5_1_3: true           # Ensure SELinux policy is configured
+    rhel8cis_rule_1_5_1_4: true           # Ensure the SELinux mode is enforcing
+    rhel8cis_rule_1_5_1_5: true           # Ensure no unconfined services exist  
+    rhel8cis_rule_1_5_1_6: true           # Ensure SETroubleshoot is not installed
+    rhel8cis_rule_1_5_1_7: true           # Ensure the MCS Translation Service is not installed
+    
+    # =========================
+    # CRYPTO POLICIES
+    # =========================  
+    rhel8cis_crypto_policy: 'DEFAULT'      # Crypto policy mặc định
+    rhel8cis_crypto_policy_module: ''      # Không module bổ sung
+    rhel8cis_rule_1_6_1: true             # Ensure system-wide crypto policy is not legacy
+    rhel8cis_rule_1_6_2: true             # Ensure system-wide crypto policy is FUTURE or FIPS
+    
+    # =========================
+    # WARNING BANNERS
+    # =========================
+    rhel8cis_warning_banner: |
+      UNAUTHORIZED ACCESS IS PROHIBITED
+      
+      This system is for authorized users only. All activity may be 
+      monitored and reported. Unauthorized access is prohibited and 
+      subject to prosecution under applicable laws.
+      
+    rhel8cis_rule_1_7_1: true             # Ensure message of the day is configured properly
+    rhel8cis_rule_1_7_2: true             # Ensure local login warning banner is configured properly  
+    rhel8cis_rule_1_7_3: true             # Ensure remote login warning banner is configured properly
+    rhel8cis_rule_1_7_4: true             # Ensure permissions on /etc/motd are configured
+    rhel8cis_rule_1_7_5: true             # Ensure permissions on /etc/issue are configured  
+    rhel8cis_rule_1_7_6: true             # Ensure permissions on /etc/issue.net are configured
+    
+    # =========================
+    # GUI DESKTOP (TẮT CHO SERVER)
+    # =========================
+    rhel8cis_gui: false                    # Không có GUI trên server
+    rhel8cis_xwindows_required: false     # Không cần X Windows
+    
+    # =========================
+    # TIME SYNCHRONIZATION
+    # =========================
+    rhel8cis_time_synchronization: chrony
+    rhel8cis_time_synchronization_servers:
+      - pool.ntp.org                      # Hoặc NTP server nội bộ của bạn
+      - time.cloudflare.com
+    rhel8cis_rule_2_1_1: true             # Ensure time synchronization is in use
+    rhel8cis_rule_2_1_2: true             # Ensure chrony is configured
+    
+    # =========================
+    # DISABLE UNNECESSARY SERVICES  
+    # =========================
+    # Server Services - TẮT các service không cần thiết
+    rhel8cis_autofs_services: false       # Disable autofs
+    rhel8cis_avahi_server: false          # Disable Avahi  
+    rhel8cis_dhcp_server: false           # Disable DHCP
+    rhel8cis_dns_server: false            # Disable DNS server
+    rhel8cis_ftp_server: false            # Disable FTP
+    rhel8cis_httpd_server: false          # Disable Apache (customize if needed)
+    rhel8cis_nginx_server: false          # Disable Nginx (customize if needed)
+    rhel8cis_nfs_server: false            # Disable NFS
+    rhel8cis_samba_server: false          # Disable Samba
+    rhel8cis_print_server: false          # Disable CUPS
+    rhel8cis_squid_server: false          # Disable Squid
+    rhel8cis_telnet_server: false         # Disable Telnet
+    rhel8cis_tftp_server: false           # Disable TFTP
+    rhel8cis_net_snmp_server: false       # Disable SNMP
+    
+    # Client Services - TẮT client không cần thiết  
+    rhel8cis_ftp_client: false            # Disable FTP client
+    rhel8cis_telnet_required: false       # Disable Telnet client
+    rhel8cis_tftp_client: false           # Disable TFTP client
+    
+    # =========================
+    # NETWORK & FIREWALL HARDENING
+    # =========================
+    rhel8cis_ipv6_required: false         # Tắt IPv6 nếu không dùng
+    rhel8cis_is_router: false             # Không phải router
+    rhel8cis_firewall: 'firewalld'        # Sử dụng firewalld
+    rhel8cis_default_zone: public         # Zone mặc định
+    
+    # Firewall rules - CẦN CUSTOMIZE CHO ENVIRONMENT
+    rhel8cis_rule_3_4_1_1: true          # Ensure firewalld is installed
+    rhel8cis_rule_3_4_1_2: true          # Ensure firewalld service enabled and running
+    
+    # =========================
+    # SSH HARDENING (CIS Section 4.2)
+    # =========================
+    rhel8cis_rule_4_2_1: true            # Ensure permissions on /etc/ssh/sshd_config are configured
+    rhel8cis_rule_4_2_2: true            # Ensure permissions on SSH private host key files
+    rhel8cis_rule_4_2_3: true            # Ensure permissions on SSH public host key files  
+    rhel8cis_rule_4_2_4: true            # Ensure SSH access is limited
+    rhel8cis_rule_4_2_5: true            # Ensure SSH LogLevel is appropriate
+    rhel8cis_rule_4_2_6: true            # Ensure SSH root login is disabled  
+    rhel8cis_rule_4_2_7: true            # Ensure SSH PermitEmptyPasswords is disabled
+    rhel8cis_rule_4_2_8: true            # Ensure SSH PermitUserEnvironment is disabled
+    rhel8cis_rule_4_2_9: true            # Ensure SSH IgnoreRhosts is enabled
+    rhel8cis_rule_4_2_10: true           # Ensure SSH HostbasedAuthentication is disabled
+    rhel8cis_rule_4_2_11: true           # Ensure SSH PermitRootLogin is disabled
+    rhel8cis_rule_4_2_12: true           # Ensure SSH PasswordAuthentication is disabled
+    rhel8cis_rule_4_2_13: true           # Ensure only strong Ciphers are used
+    rhel8cis_rule_4_2_14: true           # Ensure only strong MAC algorithms are used
+    rhel8cis_rule_4_2_15: true           # Ensure only strong Key Exchange algorithms
+    rhel8cis_rule_4_2_16: true           # Ensure SSH Idle Timeout Interval is configured
+    rhel8cis_rule_4_2_17: true           # Ensure SSH LoginGraceTime is set to one minute or less
+    rhel8cis_rule_4_2_18: true           # Ensure SSH warning banner is configured
+    rhel8cis_rule_4_2_19: true           # Ensure SSH PAM is enabled
+    rhel8cis_rule_4_2_20: true           # Ensure SSH AllowTcpForwarding is disabled
+    rhel8cis_rule_4_2_21: true           # Ensure SSH MaxStartups is configured
+    rhel8cis_rule_4_2_22: true           # Ensure SSH MaxSessions is limited
+    
+    # SSH Configuration values
+    rhel8cis_sshd_limited: true          # Enable SSH user limiting
+    rhel8cis_sshd_allowusers: "devops"   # THAY ĐỔI username của bạn
+    rhel8cis_sshd_maxauthtries: 3        # Max authentication attempts
+    rhel8cis_sshd_clientaliveinterval: 300   # Client alive interval
+    rhel8cis_sshd_clientalivecountmax: 0     # Client alive count max
+    rhel8cis_sshd_logingracetime: 60     # Login grace time
+    rhel8cis_sshd_loglevel: INFO         # Log level
+    rhel8cis_sshd_maxsessions: 4         # Max concurrent sessions
+    rhel8cis_sshd_maxstartups: "10:30:60"    # Max startups
+    
+    # =========================
+    # PAM & AUTHSELECT CONFIGURATION
+    # =========================
+    rhel8cis_allow_authselect_updates: true      # Cho phép cập nhật authselect
+    rhel8cis_authselect_custom_profile_create: true
+    rhel8cis_authselect_custom_profile_name: cis_oracle_profile  # Tên profile custom
+    rhel8cis_authselect_default_profile_to_copy: "sssd --symlink-meta"
+    
+    # PAM Faillock settings  
+    rhel8cis_pam_faillock_attempts: 5       # Max failed attempts
+    rhel8cis_pam_faillock_deny: 5           # Deny after failed attempts
+    rhel8cis_pam_faillock_interval: 900     # 15 minutes interval
+    rhel8cis_pam_faillock_unlock_time: 900  # 15 minutes unlock time
+    rhel8cis_pam_faillock_root_unlock_time: 60  # Root unlock time
+    rhel8cis_pam_faillock_root_option: even_deny_root
+    
+    # PAM Password Quality
+    rhel8cis_pam_pwquality_minlen: 14       # Minimum password length
+    rhel8cis_pam_pwquality_minclass: 4      # Minimum character classes
+    rhel8cis_pam_pwquality_difok: 2         # Different chars from old password
+    rhel8cis_pam_pwquality_maxrepeat: 3     # Max repeated characters
+    rhel8cis_pam_pwquality_maxseq: 3        # Max sequential characters
+    
+    # PAM Password History & Aging
+    rhel8cis_pam_pwhistory_remember: 5      # Remember last N passwords
+    rhel8cis_pam_pwhash: sha512             # Password hash algorithm
+    rhel8cis_pam_pass_max_days: 90          # Password expires after 90 days
+    rhel8cis_pam_pass_min_days: 7           # Min days between password changes
+    rhel8cis_pam_pass_warn_age: 7           # Password expiry warning days
+    rhel8cis_pam_pass_inactive: 30          # Account inactive after password expires
+    
+    # =========================
+    # SUDO CONFIGURATION
+    # =========================
+    rhel8cis_rule_4_3_1: true              # Ensure sudo is installed
+    rhel8cis_rule_4_3_2: true              # Ensure sudo commands use pty
+    rhel8cis_rule_4_3_3: true              # Ensure sudo log file exists
+    rhel8cis_rule_4_3_4: true              # Ensure users must provide password for privilege escalation
+    rhel8cis_rule_4_3_5: true              # Ensure re-authentication for privilege escalation is not disabled globally
+    rhel8cis_rule_4_3_6: true              # Ensure sudo authentication timeout is configured correctly  
+    rhel8cis_rule_4_3_7: true              # Ensure access to the su command is restricted
+    
+    rhel8cis_sudolog_location: "/var/log/sudo.log"
+    rhel8cis_sudo_timestamp_timeout: 15     # Sudo timeout 15 minutes
+    rhel8cis_sugroup: sugroup               # Group for su access
+    rhel8cis_sugroup_users: "root"          # Users allowed su
+    
+    # =========================
+    # LOGGING & AUDITING (CIS Section 5)
+    # =========================
+    rhel8cis_syslog: rsyslog               # Use rsyslog for logging
+    rhel8cis_system_is_log_server: false   # Not a log server
+    rhel8cis_remote_log_server: false      # No remote logging (customize if needed)
+    
+    # Rsyslog rules
+    rhel8cis_rule_5_1_1_1: true           # Ensure rsyslog is installed
+    rhel8cis_rule_5_1_1_2: true           # Ensure rsyslog service is enabled and running
+    rhel8cis_rule_5_1_1_3: true           # Ensure rsyslog default file permissions configured
+    rhel8cis_rule_5_1_1_4: true           # Ensure logging is configured
+    rhel8cis_rule_5_1_1_5: true           # Ensure rsyslog is configured to send logs to a remote log host
+    rhel8cis_rule_5_1_1_6: true           # Ensure remote rsyslog messages are only accepted on designated log hosts
+    rhel8cis_rule_5_1_1_7: true           # Ensure rsyslog is not configured to receive logs from a remote client
+    
+    # Auditd configuration  
+    rhel8cis_rule_5_2_1_1: true           # Ensure audit service is enabled
+    rhel8cis_rule_5_2_1_2: true           # Ensure auditd service is enabled
+    rhel8cis_rule_5_2_1_3: true           # Ensure auditing for processes that start prior to auditd is enabled
+    rhel8cis_rule_5_2_1_4: true           # Ensure audit_backlog_limit is sufficient
+    
+    rhel8cis_auditd_back_log_limit: 8192   # Audit backlog limit  
+    rhel8cis_auditd_max_log_file_size: 10  # Max log file size MB
+    rhel8cis_auditd_action_mail_acct: root # Email account for audit alerts
+    rhel8cis_auditd_admin_space_left_action: single  # Action when space left
+    rhel8cis_auditd_max_log_file_action: keep_logs   # Keep logs when max reached
+    rhel8cis_auditd_space_left_action: email         # Email when space low
+    rhel8cis_auditd_disk_error_action: halt          # Halt on disk error
+    rhel8cis_auditd_disk_full_action: halt           # Halt when disk full
+    
+    # =========================
+    # FILE INTEGRITY MONITORING (AIDE)
+    # =========================
+    rhel8cis_rule_5_3_1: true             # Ensure AIDE is installed
+    rhel8cis_rule_5_3_2: true             # Ensure filesystem integrity is regularly checked  
+    rhel8cis_rule_5_3_3: true             # Ensure cryptographic mechanisms are used to protect the integrity of audit tools
+    
+    rhel8cis_config_aide: true            # Configure AIDE
+    rhel8cis_aide_scan: cron              # Use cron for AIDE scans
+    rhel8cis_aide_cron_hour: 5            # Run at 5 AM
+    rhel8cis_aide_cron_minute: 0          # At minute 0
+    
+    # =========================
+    # SYSTEM FILE PERMISSIONS (CIS Section 6)
+    # =========================
+    rhel8cis_rule_6_1_1: true             # Audit system file permissions
+    rhel8cis_rule_6_1_2: true             # Ensure permissions on /etc/passwd are configured
+    rhel8cis_rule_6_1_3: true             # Ensure permissions on /etc/passwd- are configured
+    rhel8cis_rule_6_1_4: true             # Ensure permissions on /etc/group are configured
+    rhel8cis_rule_6_1_5: true             # Ensure permissions on /etc/group- are configured
+    rhel8cis_rule_6_1_6: true             # Ensure permissions on /etc/shadow are configured
+    rhel8cis_rule_6_1_7: true             # Ensure permissions on /etc/shadow- are configured
+    rhel8cis_rule_6_1_8: true             # Ensure permissions on /etc/gshadow are configured
+    rhel8cis_rule_6_1_9: true             # Ensure permissions on /etc/gshadow- are configured
+    rhel8cis_rule_6_1_10: true            # Ensure no world writable files exist
+    rhel8cis_rule_6_1_11: true            # Ensure no unowned files or directories exist
+    rhel8cis_rule_6_1_12: true            # Ensure no ungrouped files or directories exist
+    rhel8cis_rule_6_1_13: true            # Audit SUID executables
+    rhel8cis_rule_6_1_14: true            # Audit SGID executables
+    
+    # File permission adjustments
+    rhel8cis_no_world_write_adjust: true   # Fix world-writable files
+    rhel8cis_ungrouped_adjust: false       # Don't auto-fix ungrouped files
+    rhel8cis_suid_adjust: false            # Don't auto-remove SUID
+    rhel8cis_sgid_adjust: false            # Don't auto-remove SGID
+    
+    # =========================
+    # USER AND GROUP SETTINGS
+    # =========================
+    rhel8cis_rule_6_2_1: true             # Ensure accounts in /etc/passwd use shadowed passwords
+    rhel8cis_rule_6_2_2: true             # Ensure password fields are not empty
+    rhel8cis_rule_6_2_3: true             # Ensure all users' home directories exist
+    rhel8cis_rule_6_2_4: true             # Ensure users own their home directories
+    rhel8cis_rule_6_2_5: true             # Ensure users' home directory permissions are 750 or more restrictive
+    rhel8cis_rule_6_2_6: true             # Ensure users' dot files are not group or world writable
+    rhel8cis_rule_6_2_7: true             # Ensure no users have .netrc files
+    rhel8cis_rule_6_2_8: true             # Ensure no users have .forward files
+    rhel8cis_rule_6_2_9: true             # Ensure no users have .rhosts files
+    rhel8cis_rule_6_2_10: true            # Ensure root is the only UID 0 account
+    rhel8cis_rule_6_2_11: true            # Ensure root PATH Integrity
+    
+    rhel8cis_uses_root: true              # Root user is used
+    rhel8cis_root_umask: '0027'           # Root umask
+    rhel8cis_shell_session_timeout: 900   # Shell timeout 15 minutes
+    rhel8cis_shell_session_file: /etc/profile.d/tmout.sh
+    
+    # User account settings
+    rhel8cis_user_skip_list:              # Skip these users from checks
+      - root
+      - devops
+    rhel8cis_set_max_expiry: false        # Don't auto-expire accounts
+    rhel8cis_futurepwchgdate_autofix: true  # Fix future password change dates
+    
+    # =========================
+    # AUDIT & COMPLIANCE
+    # =========================
+    run_audit: true                       # Chạy audit sau khi apply
+    audit_only: false                     # Không chỉ audit, mà remediate
+    fetch_audit_output: true              # Lấy kết quả audit về control node
+    setup_audit: true                     # Setup audit requirements
+    
+    # Audit settings
+    get_audit_binary_method: download     # Download audit binary
+    audit_content: git                    # Get audit content from git
+    audit_log_dir: '/opt'                 # Audit log directory
+    audit_output_destination: /opt/audit_summaries/
+    
+    # =========================
+    # SYSTEM MAINTENANCE
+    # =========================
+    skip_reboot: true                     # Skip automatic reboot
+    reboot_warning_changed_when: true     # Show reboot warning
+    
+    # Create compliance facts
+    create_benchmark_facts: true
+    ansible_facts_path: /etc/ansible/facts.d
+    benchmark: RHEL8-CIS
+    benchmark_version: v3.0.0
+    
+    # =========================
+    # ENVIRONMENT SPECIFIC - CẦN CUSTOMIZE
+    # =========================  
+    # Bỏ comment và customize các variables sau cho môi trường của bạn:
+    
+    # rhel8cis_remote_log_host: "your-log-server.company.com"  # SIEM server
+    # rhel8cis_remote_log_port: 514
+    # rhel8cis_remote_log_protocol: tcp
+    
+    # Allowed services in firewall (CUSTOMIZE)
+    # rhel8cis_firewall_allowed_services:
+    #   - ssh
+    #   - http    # Nếu chạy web server
+    #   - https   # Nếu chạy web server
+    
+    # Allowed ports in firewall (CUSTOMIZE) 
+    # rhel8cis_firewall_allowed_ports:
+    #   - "8080/tcp"  # Application port
+    #   - "9090/tcp"  # Monitoring port 
