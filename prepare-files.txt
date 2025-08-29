@@ -1,0 +1,3 @@
+smart_security_fix.sh
+check_cis_pentest.sh
+automated_setup.sh 
